@@ -1,0 +1,19 @@
+net: "models/apple_disease/train_val_resnet50.prototxt"
+#494/256=
+#802/64=13
+#557/16=35
+test_iter: 35
+test_interval: 500
+base_lr: 0.0001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 5000
+display: 100
+max_iter: 10000
+momentum: 0.9
+weight_decay: 0.005
+snapshot: 1000
+snapshot_prefix: "models/apple_disease/resnet50_train"
+solver_mode: GPU
+device_id: 0
+average_loss: 11
