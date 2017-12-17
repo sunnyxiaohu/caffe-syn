@@ -306,7 +306,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 147 (last added: recurrent_param)
+// LayerParameter next available layer-specific ID: 204 (last added: reid_param)
 // video-caffe custom layers start with 7777
 // Next available video-caffe layer ID: 7778 (last added: video_data_layer)
 message LayerParameter {
@@ -395,6 +395,7 @@ message LayerParameter {
   optional PythonParameter python_param = 130;
   optional RecurrentParameter recurrent_param = 146;
   optional ReductionParameter reduction_param = 136;
+  optional ReidDataParameter reid_data_param = 204;
   optional ReLUParameter relu_param = 123;
   optional ReshapeParameter reshape_param = 133;
   optional ROIPoolingParameter roi_pooling_param = 201;
@@ -409,6 +410,26 @@ message LayerParameter {
   optional TileParameter tile_param = 138;
   optional VideoDataParameter video_data_param = 203;
   optional WindowDataParameter window_data_param = 129;
+}
+
+message ReidDataParameter {
+  // Specify the data source.
+  optional string source = 1;
+  // Specify the batch size.
+  optional uint32 batch_size = 4 [default = 1];
+  // It will also resize images if new_height or new_width are not zero.
+  optional uint32 new_height = 9 [default = 0];
+  optional uint32 new_width = 10 [default = 0];
+  // Specify if the images are color or gray
+  optional bool is_color = 11 [default = true];
+  optional uint32 pos_fraction = 12 [default = 1]; // Strictly positive values
+  optional uint32 neg_fraction = 13 [default = 1]; // Strictly positive values
+  optional float pos_limit = 14 [default = 1]; // Strictly positive values
+  optional float neg_limit = 15 [default = 4]; // Strictly positive values
+  optional float pos_factor = 16 [default = 1]; // Strictly positive values
+  optional float neg_factor = 17 [default = 1.01]; // Strictly positive values
+  //optional uint32 pn_step = 18 [default = 10000]; // Strictly positive values
+  optional string root_folder = 18 [default = ""];
 }
 
 // Message that stores parameters used to apply transformation

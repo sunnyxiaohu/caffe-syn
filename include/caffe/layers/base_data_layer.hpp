@@ -81,6 +81,43 @@ class BasePrefetchingDataLayer :
   Blob<Dtype> transformed_data_;
 };
 
+template <typename Dtype>
+class ReidBatch {
+ public:
+  Blob<Dtype> data_, label_;
+  Blob<Dtype> datap_, labelp_;
+};
+
+template <typename Dtype>
+class ReidPrefetchingDataLayer :
+    public BaseDataLayer<Dtype>, public InternalThread {
+ public:
+  explicit ReidPrefetchingDataLayer(const LayerParameter& param);
+  // LayerSetUp: implements common data layer setup functionality, and calls
+  // DataLayerSetUp to do special data layer setup for individual layer types.
+  // This method may not be overridden.
+  void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  // Prefetches batches (asynchronously if to GPU memory)
+  static const int PREFETCH_COUNT = 3;
+
+ protected:
+  virtual void InternalThreadEntry();
+  virtual void load_batch(ReidBatch<Dtype>* batch) = 0;
+
+  ReidBatch<Dtype> prefetch_[PREFETCH_COUNT];
+  BlockingQueue<ReidBatch<Dtype>*> prefetch_free_;
+  BlockingQueue<ReidBatch<Dtype>*> prefetch_full_;
+  // ReidBatch<Dtype>* prefetch_current_;
+
+  Blob<Dtype> transformed_data_;
+};
 }  // namespace caffe
 
 #endif  // CAFFE_DATA_LAYERS_HPP_

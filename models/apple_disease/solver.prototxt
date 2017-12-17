@@ -1,4 +1,4 @@
-net: "models/apple_disease/train_val_resnet50.prototxt"
+net: "models/apple_disease/train_val_vgg16_reid.prototxt"
 #494/256=
 #802/64=13
 #557/16=35
