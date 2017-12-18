@@ -364,6 +364,7 @@ message LayerParameter {
   optional ArgMaxParameter argmax_param = 103;
   optional BatchNormParameter batch_norm_param = 139;
   optional BiasParameter bias_param = 141;
+  optional BoxAnnotatorOHEMParameter box_annotator_ohem_param = 206;
   optional ConcatParameter concat_param = 104;
   optional ContrastiveLossParameter contrastive_loss_param = 105;
   optional ConvolutionParameter convolution_param = 106;
@@ -387,11 +388,13 @@ message LayerParameter {
   optional LRNParameter lrn_param = 118;
   optional MemoryDataParameter memory_data_param = 119;
   optional MVNParameter mvn_param = 120;
+  optional NormalizeParameter norm_param = 205;
   optional ParameterParameter parameter_param = 145;
   optional PermuteParameter permute_param = 202;
   optional PoolingParameter pooling_param = 121;
   optional PowerParameter power_param = 122;
   optional PReLUParameter prelu_param = 131;
+  optional PSROIPoolingParameter psroi_pooling_param = 207;
   optional PythonParameter python_param = 130;
   optional RecurrentParameter recurrent_param = 146;
   optional ReductionParameter reduction_param = 136;
@@ -410,6 +413,28 @@ message LayerParameter {
   optional TileParameter tile_param = 138;
   optional VideoDataParameter video_data_param = 203;
   optional WindowDataParameter window_data_param = 129;
+}
+
+message PSROIPoolingParameter {
+  required float spatial_scale = 1; 
+  required int32 output_dim = 2; // output channel number
+  required int32 group_size = 3; // equal to pooled_size
+}
+
+message BoxAnnotatorOHEMParameter {
+  required uint32 roi_per_img = 1; // number of rois for training
+  optional int32 ignore_label = 2 [default = -1]; // ignore_label in scoring
+}
+
+// Message that stores parameters used by NormalizeLayer
+message NormalizeParameter {
+  optional bool across_spatial = 1 [default = true];
+  // Initial value of scale. Default is 1.0 for all
+  optional FillerParameter scale_filler = 2;
+  // Whether or not scale parameters are shared across channels.
+  optional bool channel_shared = 3 [default = true];
+  // Epsilon for not dividing by zero while normalizing variance
+  optional float eps = 4 [default = 1e-10];
 }
 
 message ReidDataParameter {

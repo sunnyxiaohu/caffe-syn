@@ -197,6 +197,7 @@ void Solver<Dtype>::Step(int iters) {
   int average_loss = this->param_.average_loss();
   losses_.clear();
   smoothed_loss_ = 0;
+  iteration_timer_.Start();
 
   while (iter_ < stop_iter) {
     // zero-init the params
@@ -225,6 +226,18 @@ void Solver<Dtype>::Step(int iters) {
     // average the loss across iterations for smoothed reporting
     UpdateSmoothedLoss(loss, start_iter, average_loss);
     if (display) {
+      float lapse = iteration_timer_.Seconds();
+      float per_s = (iter_ - iterations_last_) / (lapse ? lapse : 1);
+      float remaining_time = lapse * (param_.max_iter() - iter_) / param_.display();
+      int remaining_hour = floor(remaining_time / 3600);
+      int remaining_min = round(remaining_time / 60 - remaining_hour * 60);
+      std::ostringstream text_time;
+      text_time << std::setw(6) << "[ " << remaining_hour << ":" << remaining_min << " (H:M) ]";
+      LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_ << " / " << param_.max_iter()
+          << " (" << per_s << " iter/s, " << lapse << "s/"
+          << param_.display() << " iters), loss = " << smoothed_loss_ << "  " << text_time.str();
+      iteration_timer_.Start();
+      iterations_last_ = iter_;
       LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
           << ", loss = " << smoothed_loss_;
       const vector<Blob<Dtype>*>& result = net_->output_blobs();

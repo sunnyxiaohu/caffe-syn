@@ -16,7 +16,8 @@ add_definitions(-DCAFFE_VERSION=${CAFFE_TARGET_VERSION})
 
 # ---[ Using cmake scripts and modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
-
+#add_compile_options(-std=c++11)
+#add_definitions(-std=c++0x)
 include(ExternalProject)
 
 include(cmake/Utils.cmake)
@@ -41,6 +42,7 @@ caffe_option(ALLOW_LMDB_NOLOCK "Allow MDB_NOLOCK when reading LMDB files (only i
 
 # ---[ Dependencies
 include(cmake/Dependencies.cmake)
+
 
 # ---[ Flags
 if(UNIX OR APPLE)
