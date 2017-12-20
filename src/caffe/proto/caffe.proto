@@ -1175,6 +1175,7 @@ message ROIPoolingParameter {
   optional float spatial_scale = 3 [default = 1];
   optional uint32 pooled_l = 4 [default = 0]; // The pooled output length
   optional float temporal_scale = 5 [default = 1];
+  optional float temporal_context = 6 [default = 1]; // The segment containing context information
 }
 
 message ScaleParameter {

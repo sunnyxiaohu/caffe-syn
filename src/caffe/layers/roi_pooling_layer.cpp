@@ -31,8 +31,10 @@ void ROIPoolingLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   pooled_width_ = roi_pool_param.pooled_w();
   temporal_scale_ = roi_pool_param.temporal_scale();
   spatial_scale_ = roi_pool_param.spatial_scale();
+  temporal_context_ = roi_pool_param.temporal_context();
   LOG(INFO) << "Temporal scale: " << temporal_scale_;
   LOG(INFO) << "Spatial scale: " << spatial_scale_;
+  LOG(INFO) << "Temporal context: " << temporal_context_;
 }
 
 template <typename Dtype>
@@ -77,10 +79,16 @@ void ROIPoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     int roi_end_h = 6;
     CHECK_GE(roi_batch_ind, 0);
     CHECK_LT(roi_batch_ind, batch_size);
-
+    
+    // Add context for segment
+    int roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
+    roi_start_l = roi_start_l - 0.5*(temporal_context_-1)*roi_length_tmp;
+    roi_end_l = roi_end_l + 0.5*(temporal_context_-1)*roi_length_tmp;
+    
     int roi_length = max(roi_end_l - roi_start_l + 1, 1);
     int roi_height = max(roi_end_h - roi_start_h + 1, 1);
     int roi_width = max(roi_end_w - roi_start_w + 1, 1);
+    
     const Dtype bin_size_l = static_cast<Dtype>(roi_length)
                              / static_cast<Dtype>(pooled_length_);
     const Dtype bin_size_h = static_cast<Dtype>(roi_height)

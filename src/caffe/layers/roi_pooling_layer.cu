@@ -19,7 +19,7 @@ __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
     const Dtype temporal_scale, const Dtype spatial_scale, const int channels,
     const int length, const int height, const int width,
     const int pooled_length, const int pooled_height, const int pooled_width,
-    const Dtype* bottom_rois, Dtype* top_data, int* argmax_data) {
+    const Dtype* bottom_rois, Dtype* top_data, int* argmax_data, const Dtype temporal_context) {
   CUDA_KERNEL_LOOP(index, nthreads) {
     // (n, c, pl, ph, pw) is an element in the pooled output
     int pw = index % pooled_width;
@@ -36,6 +36,11 @@ __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
     int roi_end_w = 6; //round(bottom_rois[3] * spatial_scale);
     int roi_end_h = 6; //round(bottom_rois[4] * spatial_scale);
     int roi_end_l = round(bottom_rois[2] * temporal_scale);
+
+    // Add context for segment
+    int roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
+    roi_start_l = roi_start_l - 0.5*(temporal_context-1)*roi_length_tmp;
+    roi_end_l = roi_end_l + 0.5*(temporal_context-1)*roi_length_tmp;
 
     // Force malformed ROIs to be 1x1
     int roi_width = max(roi_end_w - roi_start_w + 1, 1);
@@ -103,7 +108,7 @@ void ROIPoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   ROIPoolForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, bottom_data, temporal_scale_, spatial_scale_, channels_, length_,
       height_, width_, pooled_length_, pooled_height_, pooled_width_,
-      bottom_rois, top_data, argmax_data);
+      bottom_rois, top_data, argmax_data, temporal_context_);
   CUDA_POST_KERNEL_CHECK;
 }
 
@@ -113,7 +118,7 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
     const Dtype temporal_scale, const Dtype spatial_scale,
     const int channels, const int length, const int height, const int width,
     const int pooled_length, const int pooled_height, const int pooled_width, Dtype* bottom_diff,
-    const Dtype* bottom_rois) {
+    const Dtype* bottom_rois, const Dtype temporal_context) {
   CUDA_KERNEL_LOOP(index, nthreads) {
     // (n, c, l, h, w) coords in bottom data
     int w = index % width;
@@ -138,6 +143,11 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
       int roi_end_w = 6; //round(offset_bottom_rois[3] * spatial_scale);
       int roi_end_h = 6; //round(offset_bottom_rois[4] * spatial_scale);
       int roi_end_l = round(offset_bottom_rois[2] * temporal_scale);
+
+      // Add context for segment
+      int roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
+      roi_start_l = roi_start_l - 0.5*(temporal_context-1)*roi_length_tmp;
+      roi_end_l = roi_end_l + 0.5*(temporal_context-1)*roi_length_tmp;
 
       // Skip if ROI doesn't include (h, w)
       const bool in_roi = (w >= roi_start_w && w <= roi_end_w &&
@@ -213,7 +223,7 @@ void ROIPoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
       count, top_diff, argmax_data, top[0]->shape(0),
       temporal_scale_, spatial_scale_,
       channels_, length_, height_, width_,
-      pooled_length_, pooled_height_, pooled_width_, bottom_diff, bottom_rois);
+      pooled_length_, pooled_height_, pooled_width_, bottom_diff, bottom_rois, temporal_context_);
   CUDA_POST_KERNEL_CHECK;
 }
 
