@@ -14,7 +14,7 @@ net_struct = {
                  'name':['conv1a','pool1','conv2a','pool2','conv3a','conv3b',
                        'pool3','conv4a','conv4b','pool4','conv5a','conv5b','rpn_conv1','rpn_conv2','rpn_pool']},
         'RC3D-Temprol': {'net':[[3,1,1,1],[2,1,0,1],[3,1,1,1],[2,2,0,1],[3,1,1,1],[3,1,1,1],
-                        [2,2,0,1],[3,1,1,1],[3,1,1,1],[2,2,0,1],[3,1,1,1],[3,1,1,1],[3,1,1,1],[3,1,1,1],[1,1,0,1],[5,1,3,1]],
+                        [2,2,0,1],[3,1,1,1],[3,1,1,1],[2,2,0,1],[3,1,1,1],[3,1,1,1],[3,1,1,1],[3,1,1,1],[1,1,0,1],[3,1,1,1]],
                  'name':['conv1a','pool1','conv2a','pool2','conv3a','conv3b',
                        'pool3','conv4a','conv4b','pool4','conv5a','conv5b','rpn_conv1','rpn_conv2','rpn_pool','ms1']},
 }
