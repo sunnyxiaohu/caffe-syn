@@ -58,6 +58,8 @@ class ROIPoolingLayer : public Layer<Dtype> {
   Dtype temporal_scale_;
   Dtype spatial_scale_;
   Dtype temporal_context_;
+  float temporal_shift_ratio_max_;
+  float temporal_shift_ratio_;
   Blob<int> max_idx_;
 };
 

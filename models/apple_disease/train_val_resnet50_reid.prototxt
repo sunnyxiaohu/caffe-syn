@@ -1,7 +1,7 @@
 name: "Res50-base"
 layer {
   name: "data"
-  type: "ImageData"
+  type: "ReidData"
   top: "data"
   top: "label"
   include {
@@ -31,15 +31,21 @@ layer {
     rotate_min: -20
     rotate_max: 20
   }
-  image_data_param {
+  reid_data_param {
     source: "data/apple_disease/train.txt"
     batch_size: 8
     new_height: 256
     new_width: 256
-    shuffle: true
+    #shuffle: true
     root_folder: "/media/agwang/新加卷/DataSets/Competitions/AppleDiseases/"
     #scale: 0.0078125
-    show_data: true
+    #show_data: false
+    pos_fraction: 1
+    neg_fraction: 1
+    pos_limit: 1
+    neg_limit: 4
+    pos_factor: 1
+    neg_factor: 1.01
   }
 }
 layer {
@@ -3640,4 +3646,36 @@ layer {
   bottom: "fc9"
   bottom: "label"
   top: "loss"
+  loss_weight: 1
+}
+layer {
+  name: "euclidean"
+  type: "PairEuclidean"
+  bottom: "pool5"
+  bottom: "label"
+  top: "euclidean"
+  top: "label_dif"
+}
+layer {
+  name: "score_dif"
+  type: "InnerProduct"
+  bottom: "euclidean"
+  top: "score_dif"
+  inner_product_param {
+    num_output: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+  }
+}
+layer {
+  name: "loss_dif"
+  type: "SoftmaxWithLoss"
+  bottom: "score_dif"
+  bottom: "label_dif"
+  top: "loss_dif"
+  loss_weight: 0.5
+  propagate_down: true
+  propagate_down: false
 }

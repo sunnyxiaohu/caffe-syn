@@ -1176,6 +1176,7 @@ message ROIPoolingParameter {
   optional uint32 pooled_l = 4 [default = 0]; // The pooled output length
   optional float temporal_scale = 5 [default = 1];
   optional float temporal_context = 6 [default = 1]; // The segment containing context information
+  optional float temporal_shift_ratio_max = 7 [default = 0]; // Only use when training
 }
 
 message ScaleParameter {

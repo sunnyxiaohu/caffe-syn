@@ -8,6 +8,7 @@
 #include <cfloat>
 
 #include "caffe/layers/roi_pooling_layer.hpp"
+#include "caffe/util/rng.hpp"
 
 using std::max;
 using std::min;
@@ -32,9 +33,16 @@ void ROIPoolingLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   temporal_scale_ = roi_pool_param.temporal_scale();
   spatial_scale_ = roi_pool_param.spatial_scale();
   temporal_context_ = roi_pool_param.temporal_context();
+  if (this->phase_ == TRAIN)
+    temporal_shift_ratio_max_ = roi_pool_param.temporal_shift_ratio_max();
+  else
+    temporal_shift_ratio_max_ = 0;
   LOG(INFO) << "Temporal scale: " << temporal_scale_;
   LOG(INFO) << "Spatial scale: " << spatial_scale_;
   LOG(INFO) << "Temporal context: " << temporal_context_;
+  LOG(INFO) << "Temporal shift ratio: " << temporal_shift_ratio_max_;
+  // Initionalize
+  temporal_shift_ratio_ = 0;
 }
 
 template <typename Dtype>
@@ -84,6 +92,14 @@ void ROIPoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     int roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
     roi_start_l = roi_start_l - 0.5*(temporal_context_-1)*roi_length_tmp;
     roi_end_l = roi_end_l + 0.5*(temporal_context_-1)*roi_length_tmp;
+
+    // Add temporal shift for segment
+    if (temporal_shift_ratio_max_ > 0) {
+      roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
+      caffe_rng_uniform(1, -temporal_shift_ratio_max_, temporal_shift_ratio_max_, &temporal_shift_ratio_);
+      roi_start_l = roi_start_l + temporal_shift_ratio_*roi_length_tmp;
+      roi_end_l = roi_end_l + temporal_shift_ratio_*roi_length_tmp;
+    }
     
     int roi_length = max(roi_end_l - roi_start_l + 1, 1);
     int roi_height = max(roi_end_h - roi_start_h + 1, 1);

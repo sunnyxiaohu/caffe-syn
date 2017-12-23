@@ -19,7 +19,8 @@ __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
     const Dtype temporal_scale, const Dtype spatial_scale, const int channels,
     const int length, const int height, const int width,
     const int pooled_length, const int pooled_height, const int pooled_width,
-    const Dtype* bottom_rois, Dtype* top_data, int* argmax_data, const Dtype temporal_context) {
+    const Dtype* bottom_rois, Dtype* top_data, int* argmax_data, 
+    const Dtype temporal_context, const Dtype temporal_shift_ratio) {
   CUDA_KERNEL_LOOP(index, nthreads) {
     // (n, c, pl, ph, pw) is an element in the pooled output
     int pw = index % pooled_width;
@@ -41,6 +42,13 @@ __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
     int roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
     roi_start_l = roi_start_l - 0.5*(temporal_context-1)*roi_length_tmp;
     roi_end_l = roi_end_l + 0.5*(temporal_context-1)*roi_length_tmp;
+
+    // Add temporal shift for segment
+    if (temporal_shift_ratio != 0) {
+      roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
+      roi_start_l = roi_start_l + temporal_shift_ratio*roi_length_tmp;
+      roi_end_l = roi_end_l + temporal_shift_ratio*roi_length_tmp;
+    }
 
     // Force malformed ROIs to be 1x1
     int roi_width = max(roi_end_w - roi_start_w + 1, 1);
@@ -104,11 +112,17 @@ void ROIPoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   Dtype* top_data = top[0]->mutable_gpu_data();
   int* argmax_data = max_idx_.mutable_gpu_data();
   int count = top[0]->count();
+  // Assign the same temporal shift for all the rois in a forward
+  // generate the temporal_shift_ratio when forward, use the same at backward
+  if (temporal_shift_ratio_max_ > 0) {
+      caffe_rng_uniform(1, -temporal_shift_ratio_max_, temporal_shift_ratio_max_, &temporal_shift_ratio_);
+  }
+  LOG(INFO) <<"Forward: temporal_shift_ratio"<<temporal_shift_ratio_;
   // NOLINT_NEXT_LINE(whitespace/operators)
   ROIPoolForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, bottom_data, temporal_scale_, spatial_scale_, channels_, length_,
       height_, width_, pooled_length_, pooled_height_, pooled_width_,
-      bottom_rois, top_data, argmax_data, temporal_context_);
+      bottom_rois, top_data, argmax_data, temporal_context_, temporal_shift_ratio_);
   CUDA_POST_KERNEL_CHECK;
 }
 
@@ -118,7 +132,7 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
     const Dtype temporal_scale, const Dtype spatial_scale,
     const int channels, const int length, const int height, const int width,
     const int pooled_length, const int pooled_height, const int pooled_width, Dtype* bottom_diff,
-    const Dtype* bottom_rois, const Dtype temporal_context) {
+    const Dtype* bottom_rois, const Dtype temporal_context, const Dtype temporal_shift_ratio) {
   CUDA_KERNEL_LOOP(index, nthreads) {
     // (n, c, l, h, w) coords in bottom data
     int w = index % width;
@@ -148,6 +162,13 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
       int roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
       roi_start_l = roi_start_l - 0.5*(temporal_context-1)*roi_length_tmp;
       roi_end_l = roi_end_l + 0.5*(temporal_context-1)*roi_length_tmp;
+
+      // Add temporal shift for segment
+      if (temporal_shift_ratio != 0) {
+        roi_length_tmp = max(roi_end_l - roi_start_l + 1, 1);
+        roi_start_l = roi_start_l + temporal_shift_ratio*roi_length_tmp;
+        roi_end_l = roi_end_l + temporal_shift_ratio*roi_length_tmp;
+      }
 
       // Skip if ROI doesn't include (h, w)
       const bool in_roi = (w >= roi_start_w && w <= roi_end_w &&
@@ -218,12 +239,13 @@ void ROIPoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   const int count = bottom[0]->count();
   caffe_gpu_set(count, Dtype(0.), bottom_diff);
   const int* argmax_data = max_idx_.gpu_data();
+  LOG(INFO) <<"Backward: temporal_shift_ratio"<<temporal_shift_ratio_;
   // NOLINT_NEXT_LINE(whitespace/operators)
   ROIPoolBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, top_diff, argmax_data, top[0]->shape(0),
       temporal_scale_, spatial_scale_,
       channels_, length_, height_, width_,
-      pooled_length_, pooled_height_, pooled_width_, bottom_diff, bottom_rois, temporal_context_);
+      pooled_length_, pooled_height_, pooled_width_, bottom_diff, bottom_rois, temporal_context_, temporal_shift_ratio_);
   CUDA_POST_KERNEL_CHECK;
 }
 
