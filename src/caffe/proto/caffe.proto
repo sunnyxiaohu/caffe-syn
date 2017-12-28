@@ -365,6 +365,7 @@ message LayerParameter {
   optional BatchNormParameter batch_norm_param = 139;
   optional BiasParameter bias_param = 141;
   optional BoxAnnotatorOHEMParameter box_annotator_ohem_param = 206;
+  optional CompactBilinearParameter compact_bilinear_param=208;
   optional ConcatParameter concat_param = 104;
   optional ContrastiveLossParameter contrastive_loss_param = 105;
   optional ConvolutionParameter convolution_param = 106;
@@ -413,6 +414,18 @@ message LayerParameter {
   optional TileParameter tile_param = 138;
   optional VideoDataParameter video_data_param = 203;
   optional WindowDataParameter window_data_param = 129;
+}
+
+message CompactBilinearParameter {
+	// compact bilinear pooling output number of channels
+	// two inputs are of size N*C1*H*W and N*C2*H*W, the output has size
+	// N*num_output*1(H)*(W), depending on whether do sum pooling. 
+	optional uint32 num_output = 1;
+	
+	// by default, do sum pooling over spatial locations.
+	// In the case of caring spatio location, such as semantic segmentation,
+	// one might don't want to be pooled spatially. 
+	optional bool sum_pool = 2 [default = true]; 
 }
 
 message PSROIPoolingParameter {
