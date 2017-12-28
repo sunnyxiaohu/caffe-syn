@@ -117,7 +117,7 @@ void ROIPoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   if (temporal_shift_ratio_max_ > 0) {
       caffe_rng_uniform(1, -temporal_shift_ratio_max_, temporal_shift_ratio_max_, &temporal_shift_ratio_);
   }
-  LOG(INFO) <<"Forward: temporal_shift_ratio"<<temporal_shift_ratio_;
+  //LOG(INFO) <<"Forward: temporal_shift_ratio: "<<temporal_shift_ratio_;
   // NOLINT_NEXT_LINE(whitespace/operators)
   ROIPoolForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, bottom_data, temporal_scale_, spatial_scale_, channels_, length_,
@@ -239,7 +239,7 @@ void ROIPoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   const int count = bottom[0]->count();
   caffe_gpu_set(count, Dtype(0.), bottom_diff);
   const int* argmax_data = max_idx_.gpu_data();
-  LOG(INFO) <<"Backward: temporal_shift_ratio"<<temporal_shift_ratio_;
+  // LOG(INFO) <<"Backward: temporal_shift_ratio: "<<temporal_shift_ratio_;
   // NOLINT_NEXT_LINE(whitespace/operators)
   ROIPoolBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, top_diff, argmax_data, top[0]->shape(0),
