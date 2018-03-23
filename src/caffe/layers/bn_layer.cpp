@@ -21,7 +21,7 @@ void BNLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     this->blobs_.resize(4);
     vector<int> shape;
     shape.push_back(1);
-    shape.push_back(bottom[0]->channels());
+    shape.push_back(bottom[0]->shape(1));
     // slope
     this->blobs_[0].reset(new Blob<Dtype>(shape));
     shared_ptr<Filler<Dtype> > slope_filler(GetFiller<Dtype>(
@@ -68,10 +68,10 @@ void BNLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
 template <typename Dtype>
 void BNLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
-  num_ = bottom[0]->num();
-  channels_ = bottom[0]->channels();
-  height_ = bottom[0]->height();
-  width_ = bottom[0]->width();
+  num_ = bottom[0]->shape(0);
+  channels_ = bottom[0]->shape(1);
+  height_ = 1;
+  width_ = bottom[0]->count(2);
 
   top[0]->ReshapeLike(*(bottom[0]));
 
@@ -342,5 +342,5 @@ STUB_GPU(BNLayer);
 #endif
 
 INSTANTIATE_CLASS(BNLayer);
-
+REGISTER_LAYER_CLASS(BN);
 }  // namespace caffe
