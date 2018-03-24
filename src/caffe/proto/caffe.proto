@@ -403,7 +403,8 @@ message LayerParameter {
   optional ReidDataParameter reid_data_param = 204;
   optional ReLUParameter relu_param = 123;
   optional ReshapeParameter reshape_param = 133;
-  optional ROIPoolingParameter roi_pooling_param = 201;
+  optional ROIPoolingParameter roi_pooling_param = 210;
+  optional ROITemporalPoolingParameter roi_temporal_pooling_param = 201;
   optional ScaleParameter scale_param = 142;
   optional SigmoidParameter sigmoid_param = 124;
   optional SmoothL1LossParameter smooth_l1_loss_param = 200;
@@ -416,7 +417,8 @@ message LayerParameter {
   optional VideoDataParameter video_data_param = 203;
   optional WindowDataParameter window_data_param = 129;
 }
-
+// Forked from https://github.com/gy20073/compact_bilinear_pooling/tree/master/caffe-20160312
+// And paper: Bilinear CNN models for fine-grained visual recognition
 message CompactBilinearParameter {
 	// compact bilinear pooling output number of channels
 	// two inputs are of size N*C1*H*W and N*C2*H*W, the output has size
@@ -1196,8 +1198,9 @@ message ReshapeParameter {
   optional int32 num_axes = 3 [default = -1];
 }
 
-// Message that stores parameters used by ROIPoolingLayer
-message ROIPoolingParameter {
+// Forked and re-implement from paper: R-C3D: Region Convolutional 3D Network for Temporal Activity Detection
+// Message that stores parameters used by ROITemporalPoolingLayer
+message ROITemporalPoolingParameter {
   // Pad, kernel size, and stride are all given as a single value for equal
   // dimensions in height and width or as Y, X pairs.
   optional uint32 pooled_h = 1 [default = 0]; // The pooled output height
@@ -1209,6 +1212,17 @@ message ROIPoolingParameter {
   optional float temporal_scale = 5 [default = 1];
   optional float temporal_context = 6 [default = 1]; // The segment containing context information
   optional float temporal_shift_ratio_max = 7 [default = 0]; // Only use when training
+}
+// Forked from py-faster-rcnn
+// Message that stores parameters used by ROIPoolingLayer
+message ROIPoolingParameter {
+  // Pad, kernel size, and stride are all given as a single value for equal
+  // dimensions in height and width or as Y, X pairs.
+  optional uint32 pooled_h = 1 [default = 0]; // The pooled output height
+  optional uint32 pooled_w = 2 [default = 0]; // The pooled output width
+  // Multiplicative spatial scale factor to translate ROI coords from their
+  // input scale to the scale used when pooling
+  optional float spatial_scale = 3 [default = 1];
 }
 
 message ScaleParameter {
