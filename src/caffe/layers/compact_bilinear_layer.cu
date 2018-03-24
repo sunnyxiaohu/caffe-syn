@@ -343,7 +343,7 @@ __global__ void copy_and_transpose(const int nthreads, const int batch,
         // index over dst
         const int left = index % (hw * num_output_);
         const int ibatch = index / (hw * num_output_);
-        const int ihw = left / num_output_;
+        // const int ihw = left / num_output_;
         const int iout = left % num_output_;
 
         dst[index] = src[ibatch * num_output_ + iout];
@@ -383,7 +383,7 @@ __global__ void fliplr(const int nthreads, Dtype* src, const int M,
     CUDA_KERNEL_LOOP(index, nthreads) {
         // src & dst are M*N
         // flip left right, loop over src
-        const int m = index / N;
+        // const int m = index / N;
         const int n = index % N;
         if ((n <= (N / 2)) && (n >= 1))
             caffe_gpu_swap(src + index, src + index - n + N - n);

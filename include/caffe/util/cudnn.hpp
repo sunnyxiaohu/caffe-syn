@@ -43,6 +43,16 @@ inline const char* cudnnGetErrorString(cudnnStatus_t status) {
       return "CUDNN_STATUS_NOT_SUPPORTED";
     case CUDNN_STATUS_LICENSE_ERROR:
       return "CUDNN_STATUS_LICENSE_ERROR";
+#if CUDNN_VERSION_MIN(6, 0, 0)
+    case CUDNN_STATUS_RUNTIME_PREREQUISITE_MISSING:
+      return "CUDNN_STATUS_RUNTIME_PREREQUISITE_MISSING";
+#endif
+#if CUDNN_VERSION_MIN(7, 0, 0)
+    case CUDNN_STATUS_RUNTIME_IN_PROGRESS:
+      return "CUDNN_STATUS_RUNTIME_IN_PROGRESS";
+    case CUDNN_STATUS_RUNTIME_FP_OVERFLOW:
+      return "CUDNN_STATUS_RUNTIME_FP_OVERFLOW";
+#endif
   }
   return "Unknown cudnn status";
 }
@@ -69,7 +79,7 @@ template <typename Dtype>
 inline void createTensor4dDesc(cudnnTensorDescriptor_t* desc) {
   CUDNN_CHECK(cudnnCreateTensorDescriptor(desc));
 }
-
+//log
 template <typename Dtype>
 inline void createTensorDesc(cudnnTensorDescriptor_t* desc) {
   CUDNN_CHECK(cudnnCreateTensorDescriptor(desc));
@@ -82,7 +92,7 @@ inline void setTensor4dDesc(cudnnTensorDescriptor_t* desc,
   CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(*desc, dataType<Dtype>::type,
         n, c, h, w, stride_n, stride_c, stride_h, stride_w));
 }
-
+//log
 template <typename Dtype>
 inline void setTensorNdDesc(cudnnTensorDescriptor_t* desc,
     std::vector<int> shape,
@@ -111,7 +121,7 @@ inline void setTensor4dDesc(cudnnTensorDescriptor_t* desc,
   setTensor4dDesc<Dtype>(desc, n, c, h, w,
                          stride_n, stride_c, stride_h, stride_w);
 }
-
+//log
 template <typename Dtype>
 inline void setTensorNdDesc(cudnnTensorDescriptor_t* desc,
     std::vector<int> shape) {
@@ -135,7 +145,7 @@ inline void createFilterDesc(cudnnFilterDescriptor_t* desc,
       CUDNN_TENSOR_NCHW, n, c, h, w));
 #endif
 }
-
+//log
 template <typename Dtype>
 inline void createNdFilterDesc(cudnnFilterDescriptor_t* desc,
     std::vector<int> shape) {
@@ -158,10 +168,16 @@ template <typename Dtype>
 inline void setConvolutionDesc(cudnnConvolutionDescriptor_t* conv,
     cudnnTensorDescriptor_t bottom, cudnnFilterDescriptor_t filter,
     int pad_h, int pad_w, int stride_h, int stride_w) {
-  CUDNN_CHECK(cudnnSetConvolution2dDescriptor(*conv,
-      pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION));
+#if CUDNN_VERSION_MIN(6, 0, 0)
+    CUDNN_CHECK(cudnnSetConvolution2dDescriptor(*conv,
+      pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION,
+      dataType<Dtype>::type));
+#else
+    CUDNN_CHECK(cudnnSetConvolution2dDescriptor(*conv,
+        pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION));
+#endif
 }
-
+//log
 template <typename Dtype>
 inline void setNdConvolutionDesc(cudnnConvolutionDescriptor_t* conv,
     cudnnTensorDescriptor_t bottom, cudnnFilterDescriptor_t filter,
@@ -218,7 +234,7 @@ inline void createActivationDescriptor(cudnnActivationDescriptor_t* activ_desc,
   CUDNN_CHECK(cudnnSetActivationDescriptor(*activ_desc, mode,
                                            CUDNN_PROPAGATE_NAN, Dtype(0)));
 }
-
+//log
 template <typename Dtype>
 inline void createNdPoolingDesc(cudnnPoolingDescriptor_t* pool_desc,
     PoolingParameter_PoolMethod poolmethod, cudnnPoolingMode_t* mode,
