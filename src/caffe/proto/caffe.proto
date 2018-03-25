@@ -363,15 +363,19 @@ message LayerParameter {
   optional AccuracyParameter accuracy_param = 102;
   optional ArgMaxParameter argmax_param = 103;
   optional BatchNormParameter batch_norm_param = 139;
+  optional BBoxRegParameter bbox_reg_param = 154;
   optional BNParameter bn_param = 209;
   optional BiasParameter bias_param = 141;
   optional BoxAnnotatorOHEMParameter box_annotator_ohem_param = 206;
+  optional BoxOutputParameter box_output_param = 151;
   optional CompactBilinearParameter compact_bilinear_param=208;
   optional ConcatParameter concat_param = 104;
   optional ContrastiveLossParameter contrastive_loss_param = 105;
   optional ConvolutionParameter convolution_param = 106;
   optional CropParameter crop_param = 144;
   optional DataParameter data_param = 107;
+  optional DetectionAccuracyParameter detection_accuracy_param = 150;
+  optional DetectionLossParameter detection_loss_param = 149;
   optional DropoutParameter dropout_param = 108;
   optional DummyDataParameter dummy_data_param = 109;
   optional EltwiseParameter eltwise_param = 110;
@@ -383,6 +387,7 @@ message LayerParameter {
   optional HDF5OutputParameter hdf5_output_param = 113;
   optional HingeLossParameter hinge_loss_param = 114;
   optional ImageDataParameter image_data_param = 115;
+  optional ImageGtDataParameter image_gt_data_param = 153;
   optional InfogainLossParameter infogain_loss_param = 116;
   optional InnerProductParameter inner_product_param = 117;
   optional InputParameter input_param = 143;
@@ -396,6 +401,7 @@ message LayerParameter {
   optional PoolingParameter pooling_param = 121;
   optional PowerParameter power_param = 122;
   optional PReLUParameter prelu_param = 131;
+  optional ProposalTargetParameter proposal_target_param = 152;
   optional PSROIPoolingParameter psroi_pooling_param = 207;
   optional PythonParameter python_param = 130;
   optional RecurrentParameter recurrent_param = 146;
@@ -415,8 +421,125 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional VideoDataParameter video_data_param = 203;
-  optional WindowDataParameter window_data_param = 129;
+  optional WindowDataParameter window_data_param = 129;  
 }
+//Forked from paper: MSCNN: A Unified Multi-scale Deep Convolutional Neural Network for Fast Object Detection.
+// Message that stores parameters used by ImageGt2DataLayer
+message ImageGtDataParameter {
+  // Specify the data source.
+  optional string source = 1;
+  // For data pre-processing, we can do simple scaling and subtracting the
+  // data mean, if provided. Note that the mean subtraction is always carried
+  // out before scaling.
+  optional float scale = 2 [default = 1];
+  optional string mean_file = 3;
+  // Specify the batch size.
+  optional uint32 batch_size = 4;
+  // Specify if we want to randomly mirror data.
+  optional bool mirror = 5 [default = false];
+  // Specify the downsample rate.
+  repeated uint32 downsample_rate = 6;
+  // Specify the number of coordinate.
+  optional uint32 coord_num = 7 [default = 4];
+  repeated uint32 field_h = 8;
+  repeated uint32 field_w = 9;
+  // Foreground (object) overlap threshold
+  optional float fg_threshold = 10 [default = 0.5];
+  // cache_images: will load all images in memory for faster access
+  optional uint32 resize_width = 11;
+  optional uint32 resize_height = 12;
+  optional uint32 crop_width = 13 [default = 0];
+  optional uint32 crop_height = 14 [default = 0];
+  optional bool do_multiple_scale = 15 [default = false];
+  optional uint32 min_scale = 16;
+  optional uint32 max_scale = 17;
+  optional float min_whaspect = 18;
+  optional float max_whaspect = 19;
+  optional float min_gt_width = 20 [default = 0];
+  optional float min_gt_height = 21 [default = 0];
+  optional bool shuffle = 22 [default = false];
+  optional bool output_gt_boxes = 23 [default = false];
+  optional uint32 fg_img_multiple = 24 [default = 1];
+  optional bool cache_images = 25 [default = false];
+  // append root_folder to locate images
+  optional string root_folder = 26 [default = ""];
+}
+
+// Message that stores parameters used by DetectionLayer
+message DetectionLossParameter {
+  // Specify the number of class categories.
+  optional uint32 cls_num = 1;
+  // Specifiy the number of coordinates
+  optional uint32 coord_num = 2 [default = 4];
+  // Specifiy the trade-off lambda between class and coordinate losses
+  optional float lambda = 3 [default = 1];
+  optional uint32 field_h = 4;
+  optional uint32 field_w = 5;
+  optional uint32 downsample_rate = 6;
+  optional bool bb_smooth = 7 [default = true];
+  optional float field_whr = 8 [default = 2]; 
+  optional float field_xyr = 9 [default = 2]; 
+  optional float bg_threshold = 10 [default = 0.5];
+  optional uint32 bg_multiple = 11 [default = 4];
+  optional string sample_mode = 12 [default = "random"];
+  optional bool objectness = 13 [default = false];
+  optional bool iou_weighted = 14 [default = false];
+  optional bool pos_neg_weighted = 15 [default = false];
+}
+
+// Message that stores parameters used by DetectionAccuracyLayer
+message DetectionAccuracyParameter {
+  // Specify the number of class categories.
+  optional uint32 cls_num = 1;
+  // Specifiy the number of coordinates
+  optional uint32 coord_num = 2 [default = 4];
+  optional uint32 field_h = 3;
+  optional uint32 field_w = 4;
+  optional uint32 downsample_rate = 5;
+  optional uint32 top_k = 6 [default = 1];
+  optional float field_whr = 7 [default = 2]; 
+  optional float field_xyr = 8 [default = 4]; 
+  optional float bg_threshold = 9 [default = 0.5];
+  optional bool objectness = 10 [default = false];
+}
+
+// Message that stores parameters used by BoxOutputLayer
+message BoxOutputParameter {
+  // Set the cutoff threshold
+  optional float fg_thr = 1 [default = 0];
+  optional float iou_thr = 2 [default = 0.5];
+  // Specifiy the number of coordinates
+  optional string nms_type = 3 [default = "IOU"];
+  repeated uint32 field_h = 4;
+  repeated uint32 field_w = 5;
+  repeated uint32 downsample_rate = 6;
+  optional float field_whr = 7 [default = 2]; 
+  optional float field_xyr = 8 [default = 2]; 
+  optional uint32 max_nms_num = 9 [default = 0];
+  optional uint32 max_post_nms_num = 10 [default = 0];
+  optional float min_size = 11 [default = 15]; 
+}
+
+// Message that stores parameters used by ProposalTargetLayer
+message ProposalTargetParameter {
+  optional uint32 cls_num = 1;
+  optional uint32 batch_size = 2 [default = 128];
+  optional float fg_fraction = 3 [default = 0.25];
+  optional uint32 num_img_per_batch = 4 [default = 4];
+  optional float fg_thr = 5 [default = 0.5];
+  optional float bg_thr_hg = 6 [default = 0.5];
+  optional float bg_thr_lw = 7 [default = 0.1];
+  optional uint32 img_width = 8;
+  optional uint32 img_height = 9;
+  optional bool iou_weighted = 10 [default = false];
+}
+
+// Message that stores parameters used by IOULossLayer
+message BBoxRegParameter {
+  repeated float bbox_mean = 1;
+  repeated float bbox_std = 2;
+}
+
 // Forked from https://github.com/gy20073/compact_bilinear_pooling/tree/master/caffe-20160312
 // And paper: Bilinear CNN models for fine-grained visual recognition
 message CompactBilinearParameter {
