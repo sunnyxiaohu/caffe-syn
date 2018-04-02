@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/unordered_map.hpp>
+
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe/layer.hpp"
@@ -249,6 +251,10 @@ class Net {
   /// @brief Helper for displaying debug info in Update.
   void UpdateDebugInfo(const int param_id);
 
+  /// @brief do a dry run to decide blob dependency
+  void MemoryOptimize();
+  void MemoryOptimize_v2();
+
   /// @brief The network name
   string name_;
   /// @brief The phase: TRAIN or TEST
@@ -308,6 +314,12 @@ class Net {
   bool debug_info_;
   /// The root net that actually holds the shared layers in data parallelism
   const Net* const root_net_;
+
+  /// Memory optimization related stuff.
+  bool optimize_memory_;
+  vector< shared_ptr<SyncedMemory> > shared_storage_;
+  std::set<string> excluded_blob_names_;
+
   DISABLE_COPY_AND_ASSIGN(Net);
 };
 

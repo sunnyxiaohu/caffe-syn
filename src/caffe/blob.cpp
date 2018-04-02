@@ -147,6 +147,22 @@ void Blob<Dtype>::ShareDiff(const Blob& other) {
   diff_ = other.diff();
 }
 
+template <typename Dtype>
+bool Blob<Dtype>::IsSharingDiff(const Blob* other) {
+  CHECK_EQ(count_, other->count());
+  return diff_ == other->diff();
+}
+
+template <typename Dtype>
+void Blob<Dtype>::SetDiffStorage(shared_ptr<SyncedMemory>& storage){
+  diff_ = storage;
+}
+
+template <typename Dtype>
+void Blob<Dtype>::SetDataStorage(shared_ptr<SyncedMemory>& storage) {
+  data_ = storage;
+}
+
 // The "update" method is used for parameter blobs in a Net, which are stored
 // as Blob<float> or Blob<double> -- hence we do not define it for
 // Blob<int> or Blob<unsigned int>.
