@@ -1,4 +1,8 @@
 name: "Res50-base"
+mem_param {
+  optimize_train: true
+  optimize_test: true
+}
 layer {
   name: "data"
   type: "ImageData"
@@ -22,24 +26,24 @@ layer {
     #scale_ratios:[1,.875,.75, .66]
     #is_flow: false
     # for erase parameter
-    erase_ratio: 0.5
-    scale_min: 0.02
-    scale_max: 0.5
-    aspect_min: 0.3
-    aspect_max: 3.3
-    rotate_ratio: 0.5
-    rotate_min: -20
-    rotate_max: 20
+    #erase_ratio: 0.5
+    #scale_min: 0.02
+    #scale_max: 0.4
+    #aspect_min: 0.3
+    #aspect_max: 3.3
+    #rotate_ratio: 0.5
+    #rotate_min: -10
+    #rotate_max: 10
   }
   image_data_param {
     source: "data/apple_disease/train.txt"
-    batch_size: 8
+    batch_size: 16
     new_height: 256
     new_width: 256
     shuffle: true
     root_folder: "/media/agwang/新加卷/DataSets/Competitions/AppleDiseases/"
     #scale: 0.0078125
-    show_data: true
+    #show_data: false
   }
 }
 layer {
@@ -3602,10 +3606,10 @@ layer {
   }
 }
 layer {
-  name: "fc9"
+  name: "fc10"
   type: "InnerProduct"
   bottom: "pool5"
-  top: "fc9"
+  top: "fc10"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -3615,7 +3619,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 9
+    num_output: 10
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -3630,14 +3634,14 @@ layer {
 layer {
   name: "accuracy"
   type: "Accuracy"
-  bottom: "fc9"
+  bottom: "fc10"
   bottom: "label"
   top: "accuracy"
 }
 layer {
   name: "loss"
   type: "SoftmaxWithLoss"
-  bottom: "fc9"
+  bottom: "fc10"
   bottom: "label"
   top: "loss"
 }

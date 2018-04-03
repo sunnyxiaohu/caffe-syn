@@ -1,4 +1,10 @@
 name: "ResNet-50"
+mem_param {
+  optimize_train: false
+  optimize_test: true
+  exclude_blob: "prob"
+  exclude_blob: "fc10"
+}
 layer {
   name: "data"
   type: "Input"
@@ -3538,10 +3544,10 @@ layer {
   }
 }
 layer {
-  name: "fc9"
+  name: "fc10"
   type: "InnerProduct"
   bottom: "pool5"
-  top: "fc9"
+  top: "fc10"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -3551,7 +3557,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 9
+    num_output: 10
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -3565,6 +3571,6 @@ layer {
 layer {
   name: "prob"
   type: "Softmax"
-  bottom: "fc9"
+  bottom: "fc10"
   top: "prob"
 }

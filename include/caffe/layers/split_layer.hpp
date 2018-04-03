@@ -28,10 +28,7 @@ class SplitLayer : public Layer<Dtype> {
   virtual inline int MinTopBlobs() const { return 1; }
 
   virtual inline bool is_sharing_data(int top_id, int bottom_id){
-    return top_id == bottom_id;
-  }
-  virtual inline bool is_sharing_diff(int top_id, int bottom_id){
-    return top_id == bottom_id;
+    return true;
   }
 
  protected:

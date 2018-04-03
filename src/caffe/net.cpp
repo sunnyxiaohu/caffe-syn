@@ -66,14 +66,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   map<string, int> blob_name_to_idx;
   set<string> available_blobs;
   memory_used_ = 0;
-  // set the input blobs
-  for (int input_id = 0; input_id < param.input_size(); ++input_id) {
-    const int layer_id = -1;  // inputs have fake layer ID -1
-    AppendTop(param, layer_id, input_id, &available_blobs, &blob_name_to_idx);
 
-    // input blobs are excluded from memory optimization by default
-    excluded_blob_names_.insert(param.input(input_id));
-  }
   LOG_IF(INFO, Caffe::root_solver()) << "Memory required for data: " << memory_used_ * sizeof(Dtype);
   // For each layer, set up its input and output
   bottom_vecs_.resize(param.layer_size());
@@ -123,11 +116,11 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     for (int top_id = 0; top_id < num_top; ++top_id) {
       AppendTop(param, layer_id, top_id, &available_blobs, &blob_name_to_idx);
       // Collect Input layer tops as Net inputs.
-      // if (layer_param.type() == "Input") {
-      //  const int blob_id = blobs_.size() - 1;
-      //  net_input_blob_indices_.push_back(blob_id);
-      //  net_input_blobs_.push_back(blobs_[blob_id].get());
-      // }
+      if (layer_param.type() == "Input") {
+        const int blob_id = blobs_.size() - 1;
+        net_input_blob_indices_.push_back(blob_id);
+        net_input_blobs_.push_back(blobs_[blob_id].get());
+      }
     }
     // If the layer specifies that AutoTopBlobs() -> true and the LayerParameter
     // specified fewer than the required number (as specified by
@@ -283,7 +276,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     net_output_blob_indices_.push_back(blob_name_to_idx[*it]);
 
     // add output blob name to default excluded blobs
-    excluded_blob_names_.insert(*it);
+    // excluded_blob_names_.insert(*it);
   }
   for (size_t blob_id = 0; blob_id < blob_names_.size(); ++blob_id) {
     blob_names_index_[blob_names_[blob_id]] = blob_id;
@@ -413,11 +406,10 @@ template <typename Dtype>
 void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
                            const int top_id, set<string>* available_blobs,
                            map<string, int>* blob_name_to_idx) {
-  shared_ptr<LayerParameter> layer_param((layer_id >= 0) ?
-    (new LayerParameter(param.layer(layer_id))) : NULL);
-  const string& blob_name = layer_param ?
-      (layer_param->top_size() > top_id ?
-          layer_param->top(top_id) : "(automatic)") : param.input(top_id);
+  shared_ptr<LayerParameter> layer_param(
+      new LayerParameter(param.layer(layer_id)));
+  const string& blob_name = (layer_param->top_size() > top_id) ?
+      layer_param->top(top_id) : "(automatic)";
   // Check if we are doing in-place computation
   if (blob_name_to_idx && layer_param && layer_param->bottom_size() > top_id &&
       blob_name == layer_param->bottom(top_id)) {
@@ -435,11 +427,7 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
   } else {
     if (Caffe::root_solver()) {
       // Normal output.
-      if (layer_param) {
-        LOG(INFO) << layer_param->name() << " -> " << blob_name;
-      } else {
-        LOG(INFO) << "Input " << top_id << " -> " << blob_name;
-      }
+      LOG(INFO) << layer_param->name() << " -> " << blob_name;
     }
     shared_ptr<Blob<Dtype> > blob_pointer(new Blob<Dtype>());
     const int blob_id = blobs_.size();
@@ -447,22 +435,8 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
     blob_names_.push_back(blob_name);
     blob_need_backward_.push_back(false);
     if (blob_name_to_idx) { (*blob_name_to_idx)[blob_name] = blob_id; }
-    if (layer_id == -1) {
-      // Set the (explicitly specified) dimensions of the input blob.
-      if (param.input_dim_size() > 0) {
-        blob_pointer->Reshape(param.input_dim(top_id * 4),
-                              param.input_dim(top_id * 4 + 1),
-                              param.input_dim(top_id * 4 + 2),
-                              param.input_dim(top_id * 4 + 3));
-      } else {
-        blob_pointer->Reshape(param.input_shape(top_id));
-      }
-      net_input_blob_indices_.push_back(blob_id);
-      net_input_blobs_.push_back(blob_pointer.get());
-    } else {
-      top_id_vecs_[layer_id].push_back(blob_id);
-      top_vecs_[layer_id].push_back(blob_pointer.get());
-    }
+    top_id_vecs_[layer_id].push_back(blob_id);
+    top_vecs_[layer_id].push_back(blob_pointer.get());
   }
   if (available_blobs) { available_blobs->insert(blob_name); }
 }
@@ -642,11 +616,13 @@ void Net<Dtype>::BackwardFromTo(int start, int end) {
     if (optimize_memory_) {
       // Manually set the bottom diff to zero if it is not backpropagated.
       // If not set, they may be corrupted when memory optimization is on.
+      
       const vector<Blob<Dtype>*>& bottom_vec = bottom_vecs_[i];
       for (int j = 0; j < bottom_vec.size(); ++j)
         if (!layer_need_backward_[i] || !bottom_need_backward_[i][j]) {
           bottom_vec[j]->scale_diff(0);
         }
+      
     }
     if (layer_need_backward_[i]) {
       //DEBUG USE
@@ -1219,6 +1195,7 @@ void Net<Dtype>::MemoryOptimize_v2(){
     exclude_both(share_record, excluded_names_, blob_names_[net_output_blob_indices_[i]]);
     LOG(INFO)<<"excluding output "<<blob_names_[net_output_blob_indices_[i]];
   }
+
   for (int i = 0; i < net_input_blob_indices_.size(); ++i){
     exclude_both(share_record, excluded_names_, blob_names_[net_input_blob_indices_[i]]);
     LOG(INFO)<<"excluding input "<<blob_names_[net_input_blob_indices_[i]];
