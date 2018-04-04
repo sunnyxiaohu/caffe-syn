@@ -81,12 +81,6 @@ layer {
     kernel_size: 7
     stride: 2
   }
-    param {
-        lr_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-    }
 }
 layer {
   name: "conv1/7x7_s2/bn"
@@ -96,18 +90,6 @@ layer {
   batch_norm_param {
     use_global_stats: true
   }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
 }
 layer {
   name: "conv1/7x7_s2/bn/scale"
@@ -117,14 +99,6 @@ layer {
   scale_param {
     bias_term: true
   }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
 }
 layer {
   name: "conv1/relu_7x7_s2"
@@ -154,9 +128,6 @@ layer {
     kernel_size: 1
     stride: 1
   }
-    param {
-        lr_mult: 0.0
-    }
 }
 layer {
   name: "conv2_1_1x1_reduce/bn"
@@ -166,18 +137,6 @@ layer {
   batch_norm_param {
     use_global_stats: true
   }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
 }
 layer {
   name: "conv2_1_1x1_reduce/bn/scale"
@@ -187,14 +146,6 @@ layer {
   scale_param {
     bias_term: true
   }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
-    param {
-        lr_mult: 0.0
-        decay_mult: 0.0
-    }
 }
 layer {
   name: "conv2_1_1x1_reduce/relu"

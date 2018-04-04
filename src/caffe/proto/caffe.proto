@@ -91,6 +91,9 @@ message NetParameter {
   // connectivity and behavior, is specified as a LayerParameter.
   repeated LayerParameter layer = 100;  // ID 100 so layers are printed last.
 
+  // The configuration of memory optimization
+  optional MemoryOptimizationParameter mem_param = 200;
+
   // DEPRECATED: use 'layer' instead.
   repeated V1LayerParameter layers = 2;
 }
@@ -1717,4 +1720,20 @@ message PReLUParameter {
   optional FillerParameter filler = 1;
   // Whether or not slope paramters are shared across channels.
   optional bool channel_shared = 2 [default = false];
+}
+
+message MemoryOptimizationParameter {
+  // Mode of optimization
+
+  // whether to optimize for all nets specified in train phase
+  optional bool optimize_train = 1 [default = true];
+
+  // whether to optimize for all nets specified in test phase
+  optional bool optimize_test = 2 [default = false];
+
+  // By default, all blobs for input and output are excluded from the optimization for safety.
+  // However, one can also claim a few blobs to be excluded.
+  // This is rather helpful when extracting features from intermediate blobs or debugging problems.
+  repeated string exclude_blob = 3;
+
 }
