@@ -176,6 +176,8 @@ function(detect_cuDNN)
             PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDA_TOOLKIT_INCLUDE}
             DOC "Path to cuDNN include directory." )
 
+  message(STATUS "Found cuDNN: at $ENV{CUDNN_ROOT} and ${CUDA_TOOLKIT_INCLUDE} ,final ${CUDNN_INCLUDE}")
+
   # dynamic libs have different suffix in mac and linux
   if(APPLE)
     set(CUDNN_LIB_NAME "libcudnn.dylib")

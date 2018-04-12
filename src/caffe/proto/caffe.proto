@@ -678,16 +678,20 @@ message LossParameter {
     // Divide by the total number of output locations that do not take the
     // ignore_label.  If ignore_label is not set, this behaves like FULL.
     VALID = 1;
-    // Divide by the batch size.
+   // Divide by the batch size.
     BATCH_SIZE = 2;
+    // Divide by pre-fixed normalizer
+    PRE_FIXED = 3;
     // Do not normalize the loss.
-    NONE = 3;
+    NONE = 4;
   }
   optional NormalizationMode normalization = 3 [default = VALID];
   // Deprecated.  Ignored if normalization is specified.  If normalization
   // is not specified, then setting this to false will be equivalent to
   // normalization = BATCH_SIZE to be consistent with previous behavior.
   optional bool normalize = 2;
+  //pre-fixed normalizer
+  optional float pre_fixed_normalizer = 4 [default = 1];
 }
 
 // Messages that store parameters used by individual layer types follow, in

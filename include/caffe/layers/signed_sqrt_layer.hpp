@@ -51,7 +51,7 @@ class SignedSqrtLayer : public NeuronLayer<Dtype> {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
 
   // the epsilon that is added to the denominator, to prevent 1.0/0.0
-  static const Dtype epsilon = 0.03;
+  static constexpr Dtype epsilon = 0.03;
 };
 
 }  // namespace caffe
