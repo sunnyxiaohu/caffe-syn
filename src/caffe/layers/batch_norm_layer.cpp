@@ -60,7 +60,9 @@ void BatchNormLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   mean_.Reshape(sz);
   variance_.Reshape(sz);
   temp_.ReshapeLike(*bottom[0]);
-  x_norm_.ReshapeLike(*bottom[0]);
+  if(this->layer_param_.phase()==TRAIN) {
+    x_norm_.ReshapeLike(*bottom[0]);
+  }
   sz[0]=bottom[0]->shape(0);
   batch_sum_multiplier_.Reshape(sz);
 
@@ -161,8 +163,10 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   caffe_div(temp_.count(), top_data, temp_.cpu_data(), top_data);
   // TODO(cdoersch): The caching is only needed because later in-place layers
   //                 might clobber the data.  Can we skip this if they won't?
-  caffe_copy(x_norm_.count(), top_data,
+  if(this->layer_param_.phase()==TRAIN) {
+    caffe_copy(x_norm_.count(), top_data,
       x_norm_.mutable_cpu_data());
+  }
 }
 
 template <typename Dtype>

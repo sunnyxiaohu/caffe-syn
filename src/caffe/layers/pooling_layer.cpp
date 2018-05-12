@@ -148,12 +148,12 @@ void PoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   }
   // If max pooling, we will initialize the vector index part.
   if (this->layer_param_.pooling_param().pool() ==
-      PoolingParameter_PoolMethod_MAX && top.size() == 1) {
+      PoolingParameter_PoolMethod_MAX && top.size() == 1 && this->layer_param_.phase()==TRAIN) {
     max_idx_.Reshape(pooled_shape_);
   }
   // If stochastic pooling, we will initialize the random index part.
   if (this->layer_param_.pooling_param().pool() ==
-      PoolingParameter_PoolMethod_STOCHASTIC) {
+      PoolingParameter_PoolMethod_STOCHASTIC && this->layer_param_.phase()==TRAIN) {
     rand_idx_.Reshape(pooled_shape_);
   }
 }
@@ -185,12 +185,14 @@ void PoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   switch (this->layer_param_.pooling_param().pool()) {
   case PoolingParameter_PoolMethod_MAX:
     // Initialize
+    if (this->layer_param_.phase()==TRAIN) {
     if (use_top_mask) {
       top_mask = top[1]->mutable_cpu_data();
       caffe_set(top_count, Dtype(-1), top_mask);
     } else {
       mask = max_idx_.mutable_cpu_data();
       caffe_set(top_count, -1, mask);
+    }
     }
     caffe_set(top_count, Dtype(-FLT_MAX), top_data);
     // The main loop
@@ -210,10 +212,12 @@ void PoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
                 const int index = h * width_ + w;
                 if (bottom_data[index] > top_data[pool_index]) {
                   top_data[pool_index] = bottom_data[index];
+                  if (this->layer_param_.phase()==TRAIN) {
                   if (use_top_mask) {
                     top_mask[pool_index] = static_cast<Dtype>(index);
                   } else {
                     mask[pool_index] = index;
+                  }
                   }
                 }
               }
@@ -223,10 +227,12 @@ void PoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
         // compute offset
         bottom_data += bottom[0]->offset(0, 1);
         top_data += top[0]->offset(0, 1);
+        if (this->layer_param_.phase()==TRAIN) {
         if (use_top_mask) {
           top_mask += top[0]->offset(0, 1);
         } else {
           mask += top[0]->offset(0, 1);
+        }
         }
       }
     }

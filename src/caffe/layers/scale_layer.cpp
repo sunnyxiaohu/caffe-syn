@@ -96,7 +96,7 @@ void ScaleLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   outer_dim_ = bottom[0]->count(0, axis_);
   scale_dim_ = scale->count();
   inner_dim_ = bottom[0]->count(axis_ + scale->num_axes());
-  if (bottom[0] == top[0]) {  // in-place computation
+  if (bottom[0] == top[0] && this->layer_param_.phase()==TRAIN) {  // in-place computation
     temp_.ReshapeLike(*bottom[0]);
   } else {
     top[0]->ReshapeLike(*bottom[0]);
@@ -117,7 +117,7 @@ template <typename Dtype>
 void ScaleLayer<Dtype>::Forward_cpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
   const Dtype* bottom_data = bottom[0]->cpu_data();
-  if (bottom[0] == top[0]) {
+  if (bottom[0] == top[0] && this->layer_param_.phase()==TRAIN) {
     // In-place computation; need to store bottom data before overwriting it.
     // Note that this is only necessary for Backward; we could skip this if not
     // doing Backward, but Caffe currently provides no way of knowing whether
