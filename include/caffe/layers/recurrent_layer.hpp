@@ -159,6 +159,11 @@ class RecurrentLayer : public Layer<Dtype> {
    */
   int T_;
 
+  /**
+   * @brief The number of attention localizations in the layer's input for attention mechanism.
+   */
+  int Loc_;
+
   /// @brief Whether the layer has a "static" input copied across all timesteps.
   bool static_input_;
 

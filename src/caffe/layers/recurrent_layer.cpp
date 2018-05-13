@@ -19,7 +19,11 @@ void RecurrentLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   N_ = bottom[0]->shape(1);
   LOG(INFO) << "Initializing recurrent layer: assuming input batch contains "
             << T_ << " timesteps of " << N_ << " independent streams.";
-
+  if (bottom[0]->num_axes() == 4) {
+    Loc_ = bottom[0]->shape(3);
+    LOG(INFO) << "Initializing recurrent layer: assuming input batch contains "
+              << Loc_ << " attentions.";
+  }
   CHECK_EQ(bottom[1]->num_axes(), 2)
       << "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)";
   CHECK_EQ(T_, bottom[1]->shape(0));

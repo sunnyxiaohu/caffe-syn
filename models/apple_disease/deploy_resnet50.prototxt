@@ -2,8 +2,6 @@ name: "ResNet-50"
 mem_param {
   optimize_train: false
   optimize_test: true
-  exclude_blob: "prob"
-  exclude_blob: "fc10"
 }
 layer {
   name: "data"
