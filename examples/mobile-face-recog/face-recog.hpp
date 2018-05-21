@@ -18,6 +18,7 @@
 using namespace caffe;  // NOLINT(build/namespaces)
 using namespace cv;
 using std::string;
+using std::vector;
 
 class FaceRecognition {
     public:
@@ -29,6 +30,15 @@ class FaceRecognition {
             #endif
             _net.reset(new Net<float>(model_file, TEST));
             _net->CopyTrainedLayersFrom(trained_file);
+            
+            CHECK_EQ(_net->num_inputs(), 1) << "Network should have exactly one input.";
+            //CHECK_EQ(_net->num_outputs(), 1) << "Network should have exactly one output.";
+
+            Blob<float>* input_layer = _net->input_blobs()[0];
+            _num_channels = input_layer->channels();
+            CHECK(_num_channels == 3 || _num_channels == 1)
+            << "Input layer should have 1 or 3 channels.";
+            _input_geometry = cv::Size(input_layer->width(), input_layer->height());
         }
      
         float getSimilarity(const Mat& lhs,const Mat& rhs,bool useFlipImg=true){
@@ -41,11 +51,15 @@ class FaceRecognition {
                 feat1=getLastLayerFeatures(lhs);
                 feat2=getLastLayerFeatures(rhs);
             }
-            return std::max<float>(0,getSimilarity(feat1,feat2));
+            return 0;
+            //return std::max<float>(0,getSimilarity(feat1,feat2));
         }
 	
     private:
         shared_ptr<Net<float> > _net;
+        cv::Size _input_geometry;
+        int _num_channels;
+        
         /* get moldel */
         float getMold(const vector<float>& vec) {
             int n = vec.size();
@@ -69,38 +83,80 @@ class FaceRecognition {
             Mat flipImg;
             flip(_img, flipImg, 0);    // top-down flip
             vector<float> result2 = getLastLayerFeatures(flipImg);
-            for (int i = 0; i<result2.size(); ++i)
-                result1.push_back(result2[i]);
+            //for (int i = 0; i<result2.size(); ++i)
+            //    result1.push_back(result2[i]);
             return result1;
 	    }
 	    /* gt the features of the last layer */
         vector<float> getLastLayerFeatures(const Mat& _img) {
             Mat img = _img.clone();
-            img.convertTo(img, CV_32FC3);
-            Blob<float>* inputBlob = _net->input_blobs()[0];
-            int width = inputBlob->width();
-            int height = inputBlob->height();
-            resize(img, img, Size(width, height));
-            // sub mean and rescaled to [-1, 1] according trainging prcedure
-            // TODO: could be optimized by plane-copy (channel) operation
-            img = (img - 127.5) * 0.0078125; 
-            float* data = inputBlob->mutable_cpu_data();
-            for (int k = 0; k<3; ++k){
-                for (int i = 0; i<height; ++i){
-                    for (int j = 0; j<width; ++j){
-                        int index = (k*height + i)*width + j;
-                        data[index] = img.at<Vec3f>(i, j)[k];
-                    }
-                }
+            
+            Blob<float>* input_layer = _net->input_blobs()[0];
+            input_layer->Reshape(1, _num_channels, _input_geometry.height, _input_geometry.width);
+            // Forward dimension change to all layers.
+            _net->Reshape();
+
+            std::vector<cv::Mat> input_channels;
+            wrapInputLayer(&input_channels);
+            preprocess(img, &input_channels);
+            const vector<Blob<float>* >& output_layers = _net->Forward();
+            
+            // copy the output layer to a std::vector
+            Blob<float>* output_layer = output_layers[0];
+            const float* begin = output_layer->cpu_data();
+            const float* end = begin + output_layer->count();
+            return std::vector<float>(begin, end);
+        }
+        /* Wrap the input layer of the network in separate cv::Mat objects
+        * (one per channel). This way we save one memcpy operation and we
+        * don't need to rely on cudaMemcpy2D. The last preprocessing
+        * operation will write the separacte channels directly to the input
+        * layer. 
+        */
+        void wrapInputLayer(vector<Mat>* input_channels) {
+            Blob<float>* input_layer = _net->input_blobs()[0];
+            int width = input_layer->width();
+            int height = input_layer->height();
+            float* input_data = input_layer->mutable_cpu_data();
+            for (int i = 0; i < input_layer->channels(); ++i) {
+                cv::Mat channel(height, width, CV_32FC1, input_data);
+                input_channels->push_back(channel);
+                input_data += width * height;
             }
-            vector<Blob<float>* > inputs(1, inputBlob);
-            const vector<Blob<float>* >& outputBlobs = _net->Forward(inputs);
-            Blob<float>* outputBlob = outputBlobs[0];
-            const float* value = outputBlob->cpu_data();
-            vector<float> result;
-            for (int i = 0; i<outputBlob->count(); ++i)
-	            result.push_back(value[i]);
-            return result;
+        }
+        void preprocess(const Mat& img, std::vector<cv::Mat>* input_channels) {
+            /* Convert the input image to the input image format of the network. */
+            cv::Mat sample;
+            if (img.channels() == 3 && _num_channels == 1)
+            cv::cvtColor(img, sample, cv::COLOR_BGR2GRAY);
+            else if (img.channels() == 4 && _num_channels == 1)
+            cv::cvtColor(img, sample, cv::COLOR_BGRA2GRAY);
+            else if (img.channels() == 4 && _num_channels == 3)
+            cv::cvtColor(img, sample, cv::COLOR_BGRA2BGR);
+            else if (img.channels() == 1 && _num_channels == 3)
+            cv::cvtColor(img, sample, cv::COLOR_GRAY2BGR);
+            else
+            sample = img;
+            
+            cv::Mat sample_resized;
+            if (sample.size() != _input_geometry)
+                cv::resize(sample, sample_resized, _input_geometry);
+            else
+                sample_resized = sample;
+
+            cv::Mat sample_float;
+            if (_num_channels == 3)
+                sample_resized.convertTo(sample_float, CV_32FC3);
+            else
+                sample_resized.convertTo(sample_float, CV_32FC1);
+
+            cv::Mat sample_normalized;
+            // sub mean and rescaled to [-1, 1] according trainging prcedure
+            sample_normalized = (sample_float - 127.5) * 0.0078125;
+            /* This operation will write the separate BGR planes directly to the
+            * input layer of the network because it is wrapped by the cv::Mat
+            * objects in input_channels. */
+            cv::split(sample_normalized, *input_channels);
         }
 };  
 

@@ -84,6 +84,7 @@ layer {
       type: "xavier"
     }
     bias_term:false
+    engine: CAFFE
   }
 }
 layer {

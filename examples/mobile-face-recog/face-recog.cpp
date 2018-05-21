@@ -1,4 +1,5 @@
 #include "face-recog.hpp"
+#include<time.h>
 
 int main(int argc, char** argv) {
     if (argc != 5) {
@@ -24,11 +25,16 @@ int main(int argc, char** argv) {
     CHECK(!img1.empty()) << "Unable to decode image " << img1_file;
     cv::Mat img2 = cv::imread(img2_file, -1);
     CHECK(!img2.empty()) << "Unable to decode image " << img2_file;
-  
-    float similarity = face_recog.getSimilarity(img1, img2, true);
-
+    clock_t start = clock();
+    float similarity;
+    for (int i=0; i<100; ++i) {
+        similarity = face_recog.getSimilarity(img1, img2, true);
+    }
+    clock_t end = clock();
+    
     /* Print the top N predictions. */
     std::cout << "Similarity: "<<similarity<<std::endl;
+    std::cout << "Running time: "<<(double)(end-start)/CLOCKS_PER_SEC <<"s"<<std::endl;
 
     return 0;
 }
