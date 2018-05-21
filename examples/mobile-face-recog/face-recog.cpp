@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     clock_t start = clock();
     float similarity;
     for (int i=0; i<100; ++i) {
-        similarity = face_recog.getSimilarity(img1, img2, true);
+        similarity = face_recog.getSimilarity(img1, img2, false);
     }
     clock_t end = clock();
     

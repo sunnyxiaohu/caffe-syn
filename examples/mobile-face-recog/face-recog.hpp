@@ -52,7 +52,7 @@ class FaceRecognition {
                 feat2=getLastLayerFeatures(rhs);
             }
             return 0;
-            //return std::max<float>(0,getSimilarity(feat1,feat2));
+            return std::max<float>(0,getSimilarity(feat1,feat2));
         }
 	
     private:
