@@ -44,6 +44,7 @@ DataTransformer<Dtype>::DataTransformer(const TransformationParameter& param,
   for (int i = 0; i < param_.scale_ratios_size(); ++i){
     custom_scale_ratios_.push_back(param_.scale_ratios(i));
   }
+
   org_size_proc_ = param.original_image();
 }
 
@@ -370,6 +371,7 @@ void DataTransformer<Dtype>::Transform(const vector<cv::Mat> & mat_vector,
                            ? Rand(img_height - crop_size + 1) : 0;
     const int rand_w_off = (phase_ == TRAIN && param_.crop_size())
                            ? Rand(img_width - crop_size + 1) : 0;
+    const vector<int> rand_size_off {rand_h_off, rand_w_off};
     float tmp, rotate_off; 
     caffe_rng_uniform(1, 0.0f, 1.0f, &tmp);
     caffe_rng_uniform(1, param_.rotate_min(), param_.rotate_max(), &rotate_off);
@@ -405,8 +407,7 @@ void DataTransformer<Dtype>::Transform(const vector<cv::Mat> & mat_vector,
                 is_video,
                 item_id,
                 rand_mirror,
-                rand_h_off,
-                rand_w_off,
+                rand_size_off,
                 rotate_off,
                 erase_off);
       transformed_blob_offset[2] = item_id;
@@ -442,8 +443,7 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
                                        const bool is_video,
                                        const int frame,
                                        const bool rand_mirror,
-                                       const int rand_h_off,
-                                       const int rand_w_off,
+                                       const vector<int>& rand_size_off,
                                        const float rotate_off,
                                        const vector<float>& erase_off) {
   const int crop_size = param_.crop_size();
@@ -491,10 +491,16 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
   const bool has_mean_values = mean_values_.size() > 0;
   const bool is_mean_cube = data_mean_.shape().size() == 5;
   unsigned int length = 0;
+  const bool do_multi_scale = param_.multi_scale();
 
+  vector<pair<int, int> > offset_pairs;
+  vector<pair<int, int> > crop_size_pairs;
+  
   CHECK_GT(img_channels, 0);
-  CHECK_GE(img_height, crop_size);
-  CHECK_GE(img_width, crop_size);
+  if (!org_size_proc_) {
+    CHECK_GE(img_height, crop_size);
+    CHECK_GE(img_width, crop_size);
+  }
 
   Dtype* mean = NULL;
   if (has_mean_file) {
@@ -525,28 +531,84 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
 
   int h_off = 0;
   int w_off = 0;
+  int crop_height = 0;
+  int crop_width = 0;
+  
   cv::Mat cv_cropped_img = cv_img;
-  if (crop_size) {
-    CHECK_EQ(crop_size, height);
-    CHECK_EQ(crop_size, width);
-    // We only do random crop when we do training.
-    if (phase_ == TRAIN) {
-      if (is_video) {
-        h_off = rand_h_off;
-        w_off = rand_w_off;
+  if (!org_size_proc_) {
+    if (crop_size) {
+      CHECK_EQ(crop_size, height);
+      CHECK_EQ(crop_size, width);
+      // We only do random crop when we do training.
+      if (phase_ == TRAIN) {
+        if (is_video) {
+          h_off = rand_size_off[0];
+          w_off = rand_size_off[1];
+        } else { // We only do multi_scale for image propress.
+          if (do_multi_scale) {
+            fillCropSize(img_height, img_width, crop_size, crop_size, crop_size_pairs,
+                         max_distort_, custom_scale_ratios_);
+            int sel = Rand(crop_size_pairs.size());
+            crop_height = crop_size_pairs[sel].first;
+            crop_width = crop_size_pairs[sel].second;
+          } else {
+            crop_height = crop_size;
+            crop_width = crop_size;
+          }
+          if (param_.fix_crop()) {
+            fillFixOffset(img_height, img_width, crop_height, crop_width,
+                          param_.more_fix_crop(), offset_pairs);
+            int sel = Rand(offset_pairs.size());
+            h_off = offset_pairs[sel].first;
+            w_off = offset_pairs[sel].second;
+          } else {
+            h_off = Rand(img_height - crop_size + 1);
+            w_off = Rand(img_width - crop_size + 1);
+          }
+        }
       } else {
-        h_off = Rand(img_height - crop_size + 1);
-        w_off = Rand(img_width - crop_size + 1);
+        h_off = (img_height - crop_size) / 2;
+        w_off = (img_width - crop_size) / 2;
+        crop_width = crop_size;
+        crop_height = crop_size;
+      }
+      cv::Rect roi(w_off, h_off, crop_width, crop_height);
+      // if resize needed, first put the resized image into a buffer, then copy back.
+      if (do_multi_scale && ((crop_height != crop_size) || (crop_width != crop_size))) {
+        cv::Mat crop_bufferM(cv_img, roi);
+        cv::resize(crop_bufferM, cv_cropped_img, cv::Size(crop_size, crop_size));
+        crop_bufferM.release();
+      } else {
+        cv_cropped_img = cv_img(roi);
       }
     } else {
-      h_off = (img_height - crop_size) / 2;
-      w_off = (img_width - crop_size) / 2;
+      CHECK_EQ(img_height, height);
+      CHECK_EQ(img_width, width);
+      cv_cropped_img = cv_img;
     }
-    cv::Rect roi(w_off, h_off, crop_size, crop_size);
-    cv_cropped_img = cv_img(roi);
   } else {
-    CHECK_EQ(img_height, height);
-    CHECK_EQ(img_width, width);
+    CHECK(crop_size>0)<<"in original image processing mode, crop size must be specified";
+    CHECK_EQ(crop_size, height);
+    CHECK_EQ(crop_size, width);
+    if (phase_ == TRAIN) {
+      // in training, we randomly crop different sized crops
+      sampleRandomCropSize(img_height, img_width, crop_height, crop_width);
+      h_off = (crop_height < img_height)?Rand(img_height - crop_height):0;
+      w_off = (crop_width < img_width)?Rand(img_width - crop_width):0;
+    }else{
+      // in testing, we first resize the image to sizeof (8/7*crop_size) then crop the central patch
+      h_off = img_height / 14;
+      w_off = img_width / 14;
+      crop_height = img_height / 8 * 7;
+      crop_width = img_width / 8 * 7;
+    }
+
+    cv::Rect roi(w_off, h_off, crop_width, crop_height);
+
+    // resize is always needed in original image mode
+    cv::Mat crop_bufferM(cv_img, roi);
+    cv::resize(crop_bufferM, cv_cropped_img, cv::Size(crop_size, crop_size), 0, 0, CV_INTER_CUBIC);
+    crop_bufferM.release();
   }
 
   CHECK(cv_cropped_img.data);

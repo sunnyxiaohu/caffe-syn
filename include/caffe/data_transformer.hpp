@@ -107,8 +107,7 @@ class DataTransformer {
                   const bool is_video = false,
                   const int frame = 0,
                   const bool rand_mirror = false,
-                  const int rand_h_off = 0,
-                  const int rand_w_off = 0,
+                  const vector<int>& rand_size_off = vector<int>(),
                   const float rotate_off = 0,
                   const vector<float>& erase_off = vector<float>() );
 
