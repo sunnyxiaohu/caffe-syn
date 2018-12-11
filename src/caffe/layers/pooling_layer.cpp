@@ -146,9 +146,10 @@ void PoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   if (top.size() > 1) {
     top[1]->ReshapeLike(*top[0]);
   }
+#ifdef BUILD_INFEROPT
   // If max pooling, we will initialize the vector index part.
   if (this->layer_param_.pooling_param().pool() ==
-      PoolingParameter_PoolMethod_MAX && top.size() == 1 && this->layer_param_.phase()==TRAIN) {
+      PoolingParameter_PoolMethod_MAX && top.size() == 1  && this->layer_param_.phase()==TRAIN) {
     max_idx_.Reshape(pooled_shape_);
   }
   // If stochastic pooling, we will initialize the random index part.
@@ -156,6 +157,18 @@ void PoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       PoolingParameter_PoolMethod_STOCHASTIC && this->layer_param_.phase()==TRAIN) {
     rand_idx_.Reshape(pooled_shape_);
   }
+#else
+  // If max pooling, we will initialize the vector index part.
+  if (this->layer_param_.pooling_param().pool() ==
+      PoolingParameter_PoolMethod_MAX && top.size() == 1) {
+    max_idx_.Reshape(pooled_shape_);
+  }
+  // If stochastic pooling, we will initialize the random index part.
+  if (this->layer_param_.pooling_param().pool() ==
+      PoolingParameter_PoolMethod_STOCHASTIC) {
+    rand_idx_.Reshape(pooled_shape_);
+  }
+#endif  
 }
 
 // TODO(Yangqing): Is there a faster way to do pooling in the channel-first

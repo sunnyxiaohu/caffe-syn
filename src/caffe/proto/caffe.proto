@@ -309,7 +309,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 213 (last added: flip_param)
+// LayerParameter next available layer-specific ID: 216 (last added: intranorm_param)
 // video-caffe custom layers start with 7777
 // Next available video-caffe layer ID: 7778 (last added: video_data_layer)
 message LayerParameter {
@@ -396,10 +396,12 @@ message LayerParameter {
   optional InfogainLossParameter infogain_loss_param = 116;
   optional InnerProductParameter inner_product_param = 117;
   optional InputParameter input_param = 143;
+  optional IntranormParameter intranorm_param = 215; 
   optional LogParameter log_param = 134;
   optional LRNParameter lrn_param = 118;
   optional MemoryDataParameter memory_data_param = 119;
   optional MVNParameter mvn_param = 120;
+  optional NetvladParameter netvlad_param = 213;
   optional NormalizeParameter norm_param = 205;
   optional ParameterParameter parameter_param = 145;
   optional PermuteParameter permute_param = 202;
@@ -409,6 +411,7 @@ message LayerParameter {
   optional ProposalTargetParameter proposal_target_param = 152;
   optional PSROIPoolingParameter psroi_pooling_param = 207;
   optional PythonParameter python_param = 130;
+  optional RankParameter rank_param = 214;
   optional RecurrentParameter recurrent_param = 146;
   optional ReductionParameter reduction_param = 136;
   optional ReidDataParameter reid_data_param = 204;
@@ -427,6 +430,26 @@ message LayerParameter {
   optional TileParameter tile_param = 138;
   optional VideoDataParameter video_data_param = 203;
   optional WindowDataParameter window_data_param = 129;  
+}
+
+// Forked from https://github.com/hyojinie/crn (Learned Contextual Feature Reweighting for Image Geo-Localization)
+message NetvladParameter {
+   optional uint32 cluster_num = 1 [default = 1]; 
+   optional uint32 local_dim = 2 [default = 1];
+   optional uint32 vlad_dim = 3 [default = 1];
+   optional FillerParameter weight_filler = 4;
+}
+
+message RankParameter {
+   optional uint32 neg_num = 1 [default = 1]; 
+   optional uint32 pair_size = 2 [default = 1];
+   optional float hard_ratio = 3; 
+   optional float rand_ratio = 4;
+   optional float margin = 5 [default = 0.5];
+}
+
+message IntranormParameter {
+   optional uint32 cluster_num = 1 [default = 1]; 
 }
 
 message FlipParameter {
